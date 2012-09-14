@@ -45,11 +45,14 @@ module OmniAuth
             extract_signed_element_id
           end
 
-          def validate(idp_cert_fingerprint, soft = true)
+          def validate(idp_cert_fingerprint, soft = true, cert)
             # get cert from response
-            base64_cert = self.elements["//ds:X509Certificate"].text
-            cert_text   = Base64.decode64(base64_cert)
-            cert        = OpenSSL::X509::Certificate.new(cert_text)
+            if certElement = self.elements["//ds:X509Certificate"]
+              base64_cert =  certElement.text
+              cert_text   = Base64.decode64(base64_cert)
+              cert        = OpenSSL::X509::Certificate.new(cert_text)
+            end
+
 
             # check cert matches registered idp cert
             fingerprint = Digest::SHA1.hexdigest(cert.to_der)
@@ -58,10 +61,10 @@ module OmniAuth
               return soft ? false : (raise OmniAuth::Strategies::SAML::ValidationError.new("Fingerprint mismatch"))
             end
 
-            validate_doc(base64_cert, soft)
+            validate_doc(base64_cert, soft, cert)
           end
 
-          def validate_doc(base64_cert, soft = true)
+          def validate_doc(base64_cert, soft = true, cert)
             # validate references
 
             # check for inclusive namespaces
@@ -102,8 +105,10 @@ module OmniAuth
             signature               = Base64.decode64(base64_signature)
 
             # get certificate object
-            cert_text               = Base64.decode64(base64_cert)
-            cert                    = OpenSSL::X509::Certificate.new(cert_text)
+            if cert.nil?
+              cert_text               = Base64.decode64(base64_cert)
+              cert                    = OpenSSL::X509::Certificate.new(cert_text)
+            end
 
             if !cert.public_key.verify(OpenSSL::Digest::SHA1.new, signature, canon_string)
               return soft ? false : (raise OmniAuth::Strategies::SAML::ValidationError.new("Key validation error"))

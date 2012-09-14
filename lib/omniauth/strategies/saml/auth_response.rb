@@ -76,7 +76,8 @@ module OmniAuth
         def validate(soft = true)
           validate_response_state(soft) &&
           validate_conditions(soft)     &&
-          document.validate(get_fingerprint, soft)
+
+          document.validate(get_fingerprint, soft, get_cert)
         end
 
         def validate_response_state(soft = true)
@@ -101,6 +102,12 @@ module OmniAuth
             Digest::SHA1.hexdigest(cert.to_der).upcase.scan(/../).join(":")
           else
             settings.idp_cert_fingerprint
+          end
+        end
+
+        def get_cert
+          if settings.idp_cert
+            cert = OpenSSL::X509::Certificate.new(settings.idp_cert.gsub(/^ +/, ''))
           end
         end
 
