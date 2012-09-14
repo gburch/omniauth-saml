@@ -47,8 +47,9 @@ module OmniAuth
 
           def validate(idp_cert_fingerprint, soft = true, cert)
             # get cert from response
-            if certElement = self.elements["//ds:X509Certificate"]
-              base64_cert =  certElement.text
+            unless self.elements["//ds:X509Certificate"].nil?
+              certElement = self.elements["//ds:X509Certificate"]
+              base64_cert = certElement.text
               cert_text   = Base64.decode64(base64_cert)
               cert        = OpenSSL::X509::Certificate.new(cert_text)
             end
